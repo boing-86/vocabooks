@@ -70,8 +70,8 @@ public class ReviewController {
 
 			String userAnswer = answers.get(i).trim();
 			boolean pass = "EN_TO_KR".equals(mode)
-					? word.getMeaning().trim().equalsIgnoreCase(userAnswer)
-					: word.getEnglish().trim().equalsIgnoreCase(userAnswer);
+					? containsAnswer(word.getMeaning(), userAnswer)
+					: containsAnswer(word.getEnglish(), userAnswer);
 
 			quizService.updateWeight(loginUser, word, pass);
 
@@ -93,5 +93,11 @@ public class ReviewController {
 
 		model.addAttribute("result", result);
 		return "result";
+	}
+
+	private boolean containsAnswer(String correctValue, String userAnswer) {
+		return Arrays.stream(correctValue.split("[,/]"))
+				.map(String::trim)
+				.anyMatch(s -> s.equalsIgnoreCase(userAnswer));
 	}
 }

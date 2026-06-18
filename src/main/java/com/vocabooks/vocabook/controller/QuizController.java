@@ -63,9 +63,9 @@ public class QuizController {
 			boolean pass;
 
 			if ("EN_TO_KR".equals(mode)) {
-				pass = word.getMeaning().trim().equalsIgnoreCase(userAnswer);
+				pass = containsAnswer(word.getMeaning(), userAnswer);
 			} else {
-				pass = word.getEnglish().trim().equalsIgnoreCase(userAnswer);
+				pass = containsAnswer(word.getEnglish(), userAnswer);
 			}
 
 			// 유저별 가중치 업데이트
@@ -93,5 +93,11 @@ public class QuizController {
 		model.addAttribute("result", result);
 
 		return "result";
+	}
+
+	private boolean containsAnswer(String correctValue, String userAnswer) {
+		return Arrays.stream(correctValue.split("[,/]"))
+				.map(String::trim)
+				.anyMatch(s -> s.equalsIgnoreCase(userAnswer));
 	}
 }
