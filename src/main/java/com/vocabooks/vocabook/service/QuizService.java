@@ -41,7 +41,7 @@ public class QuizService {
 				UserWord uw = UserWord.builder()
 						.user(user)
 						.word(word)
-						.weight(1)
+						.weight(0)
 						.build();
 				userWordRepository.save(uw);
 			}
@@ -52,14 +52,16 @@ public class QuizService {
 	 * 가중치 기반 랜덤 선택
 	 */
 	private List<UserWord> weightedRandomSelect(List<UserWord> userWords, int count) {
-		List<UserWord> pool = new ArrayList<>();
+		List<UserWord> pool = new ArrayList<>(userWords);
 
-		// weight만큼 반복 추가
-		for (UserWord uw : userWords) {
-			for (int i = 0; i < uw.getWeight(); i++) {
-				pool.add(uw);
-			}
-		}
+		userWords.stream()
+            .sorted(Comparator.comparingInt(UserWord::getWeight).reversed())
+            .filter(uw -> uw.getWeight() > 0)
+            .forEach(uw -> {
+                for (int i = 0; i < uw.getWeight(); i++) {
+                    pool.add(uw);
+                }
+            });
 
 		Collections.shuffle(pool);
 
@@ -86,7 +88,7 @@ public class QuizService {
 				.orElseThrow(() -> new RuntimeException("UserWord not found"));
 
 		if (correct) {
-			uw.setWeight(Math.max(1, uw.getWeight() - 1));  // 맞으면 감소 (최소 1)
+			uw.setWeight(uw.getWeight() - 1);
 		} else {
 			uw.setWeight(uw.getWeight() + 1);
 		}
@@ -100,7 +102,7 @@ public class QuizService {
 	public int getUserWeight(User user, Word word) {
 		return userWordRepository.findByUserAndWord(user, word)
 				.map(UserWord::getWeight)
-				.orElse(1);
+				.orElse(0);
 	}
 
 }

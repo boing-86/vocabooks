@@ -24,5 +24,5 @@ public class UserWord {
 	private Word word;
 
 	@Column(nullable = false)
-	private int weight = 0;
+	private int weight;
 }

@@ -16,7 +16,7 @@ public class ReviewService {
 	private final UserWordRepository userWordRepository;
 
 	public List<UserWord> getReviewWords(User user) {
-		return userWordRepository.findByUserAndWeightGreaterThanOrderByWeightDesc(user, 1);
+		return userWordRepository.findByUserAndWeightGreaterThanOrderByWeightDesc(user, 0);
 	}
 
 	public List<Word> getReviewQuizWords(User user, int count) {
