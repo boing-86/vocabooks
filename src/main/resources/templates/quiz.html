@@ -189,7 +189,7 @@
 
     <!-- 헤더 -->
     <div class="header">
-        <h1>📖 Vocabook Quiz</h1>
+        <h1 th:text="${pageTitle} ?: '📖 Vocabook Quiz'"></h1>
         <span class="mode-badge"
               th:text="${mode == 'EN_TO_KR' ? '영어 → 한국어' : '한국어 → 영어'}"></span>
     </div>
@@ -207,7 +207,7 @@
     </div>
 
     <!-- 퀴즈 폼 -->
-    <form th:action="@{/quiz/submit}" method="post">
+    <form method="post" th:action="${formAction} ?: '/quiz/submit'">
         <input type="hidden" name="mode" th:value="${mode}">
 
         <div th:each="word, stat : ${words}" class="quiz-card">

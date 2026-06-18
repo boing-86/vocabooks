@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Vocabook - 오답 모아보기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* ===== 헤더 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+        }
+
+        .count-badge {
+            background: #fff;
+            color: #e91e63;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.15);
+        }
+
+        /* ===== 모드 선택 ===== */
+        .mode-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .mode-select a {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.25s ease;
+            background: #fff;
+            color: #e91e63;
+            box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+        }
+
+        .mode-select a:hover {
+            background: #e91e63;
+            color: #fff;
+            box-shadow: 0 6px 24px rgba(233, 30, 99, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .mode-select a:active {
+            transform: translateY(0);
+        }
+
+        /* ===== 빈 상태 카드 ===== */
+        .empty-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 48px 32px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(233, 30, 99, 0.15);
+        }
+
+        .empty-card .emoji {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-card h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .empty-card p {
+            font-size: 14px;
+            color: #999;
+        }
+
+        /* ===== 단어 카드 ===== */
+        .word-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 12px rgba(233, 30, 99, 0.1);
+            border-left: 5px solid #ef5350;
+            transition: transform 0.15s ease;
+        }
+
+        .word-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.15);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-number {
+            font-size: 13px;
+            color: #bbb;
+            font-weight: 700;
+        }
+
+        .weight-badge {
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .weight-badge.high {
+            background: #ffcdd2;
+            color: #b71c1c;
+        }
+
+        .word-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .word-english {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .word-meaning {
+            font-size: 16px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .example {
+            background: #fdf2f8;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #888;
+            font-style: italic;
+            border: 1px solid #fce4ec;
+        }
+
+        /* ===== 하단 버튼 ===== */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 28px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .btn-quiz {
+            background: #fff;
+            color: #e91e63;
+            box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+        }
+
+        .btn-quiz:hover {
+            background: #e91e63;
+            color: #fff;
+            box-shadow: 0 6px 24px rgba(233, 30, 99, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.5);
+            color: #ad1457;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===== 로그아웃 ===== */
+        .logout-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .logout-link:hover {
+            color: #fff;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ===== 헤더 ===== -->
+    <div class="header">
+        <h1>📚 오답 모아보기</h1>
+        <span class="count-badge"
+              th:text="${reviewCount} + '개'"></span>
+    </div>
+
+    <!-- ===== 오답 없을 때 ===== -->
+    <div th:if="${reviewCount == 0}" class="empty-card">
+        <div class="emoji">🎉</div>
+        <h2>틀린 단어가 없어요!</h2>
+        <p>모든 단어를 완벽하게 맞혔어요. 대단합니다!</p>
+    </div>
+
+    <!-- ===== 오답 있을 때 ===== -->
+    <div th:if="${reviewCount > 0}">
+
+        <!-- 오답만 풀기 버튼 -->
+        <div class="mode-select">
+            <a th:href="@{/review/quiz(mode='EN_TO_KR')}">
+                🇺🇸 영→한 오답 풀기
+            </a>
+            <a th:href="@{/review/quiz(mode='KR_TO_EN')}">
+                🇰🇷 한→영 오답 풀기
+            </a>
+        </div>
+
+        <!-- 오답 단어 목록 -->
+        <div th:each="uw, stat : ${reviewWords}" class="word-card">
+
+            <div class="card-top">
+                <span class="card-number" th:text="'#' + (${stat.index} + 1)"></span>
+                <span class="weight-badge"
+                      th:classappend="${uw.weight >= 3 ? 'high' : ''}"
+                      th:text="'weight ' + ${uw.weight}"></span>
+            </div>
+
+            <div class="word-main">
+                <span class="word-english" th:text="${uw.word.english}"></span>
+                <span class="word-meaning" th:text="${uw.word.meaning}"></span>
+            </div>
+
+            <div class="example"
+                 th:if="${uw.word.example != null and !uw.word.example.isEmpty()}">
+                💬 <span th:text="${uw.word.example}"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 하단 버튼 ===== -->
+    <div class="btn-group">
+        <a href="/quiz" class="btn btn-back">📖 일반 퀴즈</a>
+        <a th:if="${reviewCount > 0}"
+           th:href="@{/review/quiz(mode='EN_TO_KR')}"
+           class="btn btn-quiz">🔄 오답만 풀기</a>
+    </div>
+
+    <a href="/logout" class="logout-link">로그아웃</a>
+    <p class="footer-text">Made with ♥ for learning</p>
+</div>
+
+</body>
+</html>

@@ -5,6 +5,7 @@ import com.vocabooks.vocabook.entity.UserWord;
 import com.vocabooks.vocabook.entity.Word;
 import com.vocabooks.vocabook.repository.WordRepository;
 import com.vocabooks.vocabook.service.QuizService;
+import com.vocabooks.vocabook.service.ReviewService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -15,40 +16,48 @@ import java.util.*;
 
 @Controller
 @RequiredArgsConstructor
-public class QuizController {
+@RequestMapping("/review")
+public class ReviewController {
 
+	private final ReviewService reviewService;
 	private final QuizService quizService;
 	private final WordRepository wordRepository;
 
-	@GetMapping("/quiz")
-	public String quizPage(@RequestParam(defaultValue = "EN_TO_KR") String mode,
-	                       HttpSession session,
-	                       Model model) {
-
+	@GetMapping
+	public String reviewPage(HttpSession session, Model model) {
 		User loginUser = (User) session.getAttribute("loginUser");
 		if (loginUser == null) return "redirect:/login";
 
-		// 유저별 가중치 기반 10문제 선택
-		List<UserWord> quizWords = quizService.getQuizWords(loginUser, 10);
+		List<UserWord> reviewWords = reviewService.getReviewWords(loginUser);
 
-		// 템플릿에 전달할 단어 목록 추출
-		List<Word> words = quizWords.stream()
-				.map(UserWord::getWord)
-				.toList();
+		model.addAttribute("reviewWords", reviewWords);
+		model.addAttribute("reviewCount", reviewWords.size());
+
+		return "review";
+	}
+
+	@GetMapping("/quiz")
+	public String reviewQuiz(@RequestParam(defaultValue = "EN_TO_KR") String mode,
+	                         HttpSession session, Model model) {
+		User loginUser = (User) session.getAttribute("loginUser");
+		if (loginUser == null) return "redirect:/login";
+
+		List<Word> words = reviewService.getReviewQuizWords(loginUser, 10);
+		if (words.isEmpty()) return "redirect:/review";
 
 		model.addAttribute("words", words);
 		model.addAttribute("mode", mode);
+		model.addAttribute("pageTitle", "📚 오답 문제만 풀기");
+		model.addAttribute("formAction", "/review/submit");
 
 		return "quiz";
 	}
 
-	@PostMapping("/quiz/submit")
-	public String submitQuiz(@RequestParam String mode,
-	                         @RequestParam List<Long> wordIds,
-	                         @RequestParam List<String> answers,
-	                         HttpSession session,
-	                         Model model) {
-
+	@PostMapping("/submit")
+	public String submitReview(@RequestParam String mode,
+	                           @RequestParam List<Long> wordIds,
+	                           @RequestParam List<String> answers,
+	                           HttpSession session, Model model) {
 		User loginUser = (User) session.getAttribute("loginUser");
 		if (loginUser == null) return "redirect:/login";
 
@@ -60,19 +69,11 @@ public class QuizController {
 			if (word == null) continue;
 
 			String userAnswer = answers.get(i).trim();
-			boolean pass;
+			boolean pass = "EN_TO_KR".equals(mode)
+					? word.getMeaning().trim().equalsIgnoreCase(userAnswer)
+					: word.getEnglish().trim().equalsIgnoreCase(userAnswer);
 
-			if ("EN_TO_KR".equals(mode)) {
-				pass = word.getMeaning().trim().equalsIgnoreCase(userAnswer);
-			} else {
-				pass = word.getEnglish().trim().equalsIgnoreCase(userAnswer);
-			}
-
-			// 유저별 가중치 업데이트
 			quizService.updateWeight(loginUser, word, pass);
-
-			// 업데이트 후 현재 가중치 조회
-			int currentWeight = quizService.getUserWeight(loginUser, word);
 
 			if (!pass) wrongCount++;
 
@@ -80,7 +81,7 @@ public class QuizController {
 			item.put("word", word);
 			item.put("answer", userAnswer);
 			item.put("pass", pass);
-			item.put("weight", currentWeight);
+			item.put("weight", quizService.getUserWeight(loginUser, word));
 			items.add(item);
 		}
 
@@ -91,7 +92,6 @@ public class QuizController {
 		result.put("mode", mode);
 
 		model.addAttribute("result", result);
-
 		return "result";
 	}
 }

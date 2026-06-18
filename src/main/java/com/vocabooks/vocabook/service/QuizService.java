@@ -1,11 +1,10 @@
 package com.vocabooks.vocabook.service;
 
-import com.vocabooks.vocabook.dto.QuizItem;
-import com.vocabooks.vocabook.dto.QuizResult;
-import com.vocabooks.vocabook.entity.Word;
-import com.vocabooks.vocabook.repository.WordRepository;
+import com.vocabooks.vocabook.entity.*;
+import com.vocabooks.vocabook.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -14,75 +13,94 @@ import java.util.*;
 public class QuizService {
 
 	private final WordRepository wordRepository;
+	private final UserWordRepository userWordRepository;
 
 	/**
-	 * 가중치 기반 랜덤으로 count개 단어 선택
-	 * weight가 높을수록 더 자주 출제됨
+	 * 유저별 가중치 기반으로 퀴즈 단어 10개 선택
 	 */
-	public List<Word> selectQuizWords(int count) {
-		List<Word> all = wordRepository.findAll();
+	public List<UserWord> getQuizWords(User user, int count) {
+		// 1) 해당 유저의 UserWord가 없으면 초기화
+		initUserWordsIfNeeded(user);
 
-		if (all.size() <= count) {
-			Collections.shuffle(all);
-			return all;
+		// 2) 유저의 모든 UserWord 조회
+		List<UserWord> userWords = userWordRepository.findByUser(user);
+
+		// 3) 가중치 기반 랜덤 선택
+		return weightedRandomSelect(userWords, count);
+	}
+
+	/**
+	 * 첫 퀴즈 시 유저-단어 매핑 초기화
+	 */
+	@Transactional
+	public void initUserWordsIfNeeded(User user) {
+		List<Word> allWords = wordRepository.findAll();
+
+		for (Word word : allWords) {
+			if (!userWordRepository.existsByUserAndWord(user, word)) {
+				UserWord uw = UserWord.builder()
+						.user(user)
+						.word(word)
+						.weight(1)
+						.build();
+				userWordRepository.save(uw);
+			}
 		}
+	}
 
-		// 가중치 풀 구성: weight + 1 만큼 반복 삽입
-		List<Word> pool = new ArrayList<>();
-		for (Word w : all) {
-			int freq = w.getWeight() + 1;
-			for (int i = 0; i < freq; i++) {
-				pool.add(w);
+	/**
+	 * 가중치 기반 랜덤 선택
+	 */
+	private List<UserWord> weightedRandomSelect(List<UserWord> userWords, int count) {
+		List<UserWord> pool = new ArrayList<>();
+
+		// weight만큼 반복 추가
+		for (UserWord uw : userWords) {
+			for (int i = 0; i < uw.getWeight(); i++) {
+				pool.add(uw);
 			}
 		}
 
 		Collections.shuffle(pool);
 
-		// 중복 제거하며 선택
-		Set<Long> pickedIds = new LinkedHashSet<>();
-		List<Word> result = new ArrayList<>();
-		for (Word w : pool) {
-			if (pickedIds.add(w.getId())) {
-				result.add(w);
+		// 중복 제거하면서 count개 선택
+		Set<Long> selected = new LinkedHashSet<>();
+		List<UserWord> result = new ArrayList<>();
+
+		for (UserWord uw : pool) {
+			if (selected.add(uw.getId())) {
+				result.add(uw);
+				if (result.size() >= count) break;
 			}
-			if (result.size() >= count) break;
 		}
 
 		return result;
 	}
 
 	/**
-	 * 채점 + weight 갱신
-	 * mode: "EN_TO_KR" → 영어 보고 한국어 답
-	 *        "KR_TO_EN" → 한국어 보고 영어 답
+	 * 채점 후 가중치 업데이트
 	 */
-	public QuizResult grade(List<Long> wordIds, List<String> answers, String mode) {
-		List<QuizItem> items = new ArrayList<>();
-		int wrongCount = 0;
+	@Transactional
+	public void updateWeight(User user, Word word, boolean correct) {
+		UserWord uw = userWordRepository.findByUserAndWord(user, word)
+				.orElseThrow(() -> new RuntimeException("UserWord not found"));
 
-		for (int i = 0; i < wordIds.size(); i++) {
-			Word word = wordRepository.findById(wordIds.get(i)).orElseThrow();
-			String userAnswer = answers.get(i).trim();
-
-			// 정답 판별
-			String correctAnswer = mode.equals("EN_TO_KR")
-					? word.getMeaning()
-					: word.getEnglish();
-
-			boolean pass = correctAnswer.trim().equalsIgnoreCase(userAnswer);
-
-			// weight 갱신
-			if (pass) {
-				word.setWeight(Math.max(0, word.getWeight() - 1));
-			} else {
-				word.setWeight(word.getWeight() + 1);
-				wrongCount++;
-			}
-			wordRepository.save(word);
-
-			items.add(new QuizItem(word, userAnswer, pass));
+		if (correct) {
+			uw.setWeight(Math.max(1, uw.getWeight() - 1));  // 맞으면 감소 (최소 1)
+		} else {
+			uw.setWeight(uw.getWeight() + 1);
 		}
 
-		return new QuizResult(items, wrongCount, items.size(), mode);
+		userWordRepository.save(uw);
 	}
+
+	/**
+	 * 특정 유저의 특정 단어 가중치 조회
+	 */
+	public int getUserWeight(User user, Word word) {
+		return userWordRepository.findByUserAndWord(user, word)
+				.map(UserWord::getWeight)
+				.orElse(1);
+	}
+
 }
