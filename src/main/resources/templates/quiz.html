@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Vocabook - 퀴즈</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* ===== 헤더 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+        }
+
+        .mode-badge {
+            background: #fff;
+            color: #e91e63;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.15);
+        }
+
+        /* ===== 모드 선택 ===== */
+        .mode-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .mode-select a {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.25s ease;
+        }
+
+        .mode-select a.active {
+            background: #fff;
+            color: #e91e63;
+            box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+        }
+
+        .mode-select a.inactive {
+            background: rgba(255, 255, 255, 0.4);
+            color: #ad1457;
+        }
+
+        .mode-select a.inactive:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ===== 문제 카드 ===== */
+        .quiz-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 14px;
+            box-shadow: 0 3px 12px rgba(233, 30, 99, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.15s ease;
+        }
+
+        .quiz-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.15);
+        }
+
+        .quiz-number {
+            background: linear-gradient(135deg, #f48fb1, #e91e63);
+            color: #fff;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.25);
+        }
+
+        .quiz-question {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            min-width: 120px;
+        }
+
+        .quiz-card input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #f3e5f5;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: 'Nunito', sans-serif;
+            background: #fdf2f8;
+            transition: all 0.25s ease;
+        }
+
+        .quiz-card input::placeholder {
+            color: #cba4c3;
+        }
+
+        .quiz-card input:focus {
+            outline: none;
+            border-color: #e91e63;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+        }
+
+        /* ===== 제출 버튼 ===== */
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: #fff;
+            color: #e91e63;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+        }
+
+        .btn-submit:hover {
+            background: #e91e63;
+            color: #fff;
+            box-shadow: 0 6px 24px rgba(233, 30, 99, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        /* ===== 로그아웃 ===== */
+        .logout-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .logout-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- 헤더 -->
+    <div class="header">
+        <h1>📖 Vocabook Quiz</h1>
+        <span class="mode-badge"
+              th:text="${mode == 'EN_TO_KR' ? '영어 → 한국어' : '한국어 → 영어'}"></span>
+    </div>
+
+    <!-- 모드 선택 -->
+    <div class="mode-select">
+        <a th:href="@{/quiz(mode='EN_TO_KR')}"
+           th:classappend="${mode == 'EN_TO_KR' ? 'active' : 'inactive'}">
+            🇺🇸 영어 → 한국어
+        </a>
+        <a th:href="@{/quiz(mode='KR_TO_EN')}"
+           th:classappend="${mode == 'KR_TO_EN' ? 'active' : 'inactive'}">
+            🇰🇷 한국어 → 영어
+        </a>
+    </div>
+
+    <!-- 퀴즈 폼 -->
+    <form th:action="@{/quiz/submit}" method="post">
+        <input type="hidden" name="mode" th:value="${mode}">
+
+        <div th:each="word, stat : ${words}" class="quiz-card">
+            <div class="quiz-number" th:text="${stat.index + 1}"></div>
+
+            <div class="quiz-question"
+                 th:text="${mode == 'EN_TO_KR' ? word.english : word.meaning}"></div>
+
+            <input type="hidden" name="wordIds" th:value="${word.id}">
+
+            <input type="text" name="answers"
+                   th:placeholder="${mode == 'EN_TO_KR' ? '뜻을 입력하세요' : '영어를 입력하세요'}"
+                   autocomplete="off" required>
+        </div>
+
+        <button type="submit" class="btn-submit">제출하기 ✅</button>
+    </form>
+
+    <a href="/logout" class="logout-link">로그아웃</a>
+</div>
+
+</body>
+</html>

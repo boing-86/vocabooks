@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Vocabook - 결과</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 50%, #f48fb1 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* ===== 결과 요약 카드 ===== */
+        .summary-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 36px 32px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(233, 30, 99, 0.15);
+            margin-bottom: 28px;
+        }
+
+        .summary-card h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-weight: 800;
+        }
+
+        .score-circle.perfect {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #2e7d32;
+            box-shadow: 0 4px 20px rgba(46, 125, 50, 0.2);
+        }
+
+        .score-circle.good {
+            background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+            color: #e91e63;
+            box-shadow: 0 4px 20px rgba(233, 30, 99, 0.2);
+        }
+
+        .score-circle.bad {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            color: #c62828;
+            box-shadow: 0 4px 20px rgba(198, 40, 40, 0.2);
+        }
+
+        .score-number {
+            font-size: 36px;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .score-detail {
+            font-size: 15px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .score-message {
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .score-message.perfect { color: #2e7d32; }
+        .score-message.bad { color: #c62828; }
+
+        .mode-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f48fb1, #e91e63);
+            color: #fff;
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 12px;
+        }
+
+        /* ===== 상세 결과 헤더 ===== */
+        .result-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+        }
+
+        /* ===== 단어 카드 ===== */
+        .word-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 12px rgba(233, 30, 99, 0.1);
+            border-left: 5px solid #e0e0e0;
+            transition: transform 0.15s ease;
+        }
+
+        .word-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 30, 99, 0.15);
+        }
+
+        .word-card.pass {
+            border-left-color: #66bb6a;
+        }
+
+        .word-card.fail {
+            border-left-color: #ef5350;
+        }
+
+        /* 카드 상단 */
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-number {
+            font-size: 13px;
+            color: #bbb;
+            font-weight: 700;
+        }
+
+        .badge {
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.pass {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge.fail {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* 단어 정보 */
+        .word-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .word-english {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .word-meaning {
+            font-size: 16px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* 사용자 답 */
+        .user-answer {
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #888;
+        }
+
+        .user-answer span.correct {
+            color: #2e7d32;
+            font-weight: 700;
+        }
+
+        .user-answer span.wrong {
+            color: #c62828;
+            font-weight: 700;
+            text-decoration: line-through;
+        }
+
+        /* 예문 */
+        .example {
+            background: #fdf2f8;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #888;
+            font-style: italic;
+            margin-top: 6px;
+            border: 1px solid #fce4ec;
+        }
+
+        /* weight */
+        .weight-info {
+            font-size: 12px;
+            color: #cba4c3;
+            margin-top: 8px;
+        }
+
+        /* ===== 버튼 영역 ===== */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 28px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .btn-retry {
+            background: #fff;
+            color: #e91e63;
+            box-shadow: 0 4px 16px rgba(233, 30, 99, 0.2);
+        }
+
+        .btn-retry:hover {
+            background: #e91e63;
+            color: #fff;
+            box-shadow: 0 6px 24px rgba(233, 30, 99, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .btn-switch {
+            background: rgba(255, 255, 255, 0.5);
+            color: #ad1457;
+        }
+
+        .btn-switch:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* ===== 하단 장식 ===== */
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ===== 결과 요약 ===== -->
+    <div class="summary-card">
+        <h1>📝 퀴즈 결과</h1>
+
+        <!-- 점수 원형 -->
+        <div class="score-circle"
+             th:classappend="${result.wrongCount == 0 ? 'perfect' :
+                              (result.wrongCount <= 3 ? 'good' : 'bad')}">
+            <span class="score-number"
+                  th:text="${result.totalCount - result.wrongCount}"></span>
+            <span class="score-label"
+                  th:text="'/ ' + ${result.totalCount}"></span>
+        </div>
+
+        <p class="score-detail">
+            총 <strong th:text="${result.totalCount}"></strong>문제 중
+            <strong th:text="${result.totalCount - result.wrongCount}"></strong>개 정답
+        </p>
+
+        <p class="score-message perfect" th:if="${result.wrongCount == 0}">
+            🎉 완벽해요! 대단합니다!
+        </p>
+        <p class="score-message bad" th:if="${result.wrongCount > 0}">
+            ❌ <span th:text="${result.wrongCount}"></span>개 틀렸어요 — 다시 도전해 보세요!
+        </p>
+
+        <span class="mode-badge"
+              th:text="${result.mode == 'EN_TO_KR' ? '영어 → 한국어' : '한국어 → 영어'}"></span>
+    </div>
+
+    <!-- ===== 상세 결과 ===== -->
+    <div class="result-header">📋 상세 결과</div>
+
+    <div th:each="item, stat : ${result.items}"
+         class="word-card"
+         th:classappend="${item.pass ? 'pass' : 'fail'}">
+
+        <!-- 상단: 번호 + 뱃지 -->
+        <div class="card-top">
+            <span class="card-number" th:text="'#' + (${stat.index} + 1)"></span>
+            <span class="badge"
+                  th:classappend="${item.pass ? 'pass' : 'fail'}"
+                  th:text="${item.pass ? 'PASS' : 'FAIL'}"></span>
+        </div>
+
+        <!-- 영어 / 뜻 -->
+        <div class="word-main">
+            <span class="word-english" th:text="${item.word.english}"></span>
+            <span class="word-meaning" th:text="${item.word.meaning}"></span>
+        </div>
+
+        <!-- 사용자 답 -->
+        <div class="user-answer">
+            내 답:
+            <span th:classappend="${item.pass ? 'correct' : 'wrong'}"
+                  th:text="${item.answer}"></span>
+        </div>
+
+        <!-- 예문 -->
+        <div class="example" th:if="${item.word.example != null and !item.word.example.isEmpty()}">
+            💬 <span th:text="${item.word.example}"></span>
+        </div>
+
+        <!-- weight -->
+        <div class="weight-info">
+            가중치: <span th:text="${item.word.weight}"></span>
+        </div>
+    </div>
+
+    <!-- ===== 버튼 ===== -->
+    <div class="btn-group">
+        <a th:href="@{/quiz(mode=${result.mode})}" class="btn btn-retry">
+            🔄 다시 풀기
+        </a>
+        <a th:href="@{/quiz(mode=${result.mode == 'EN_TO_KR' ? 'KR_TO_EN' : 'EN_TO_KR'})}"
+           class="btn btn-switch">
+            🔀 모드 전환
+        </a>
+    </div>
+
+    <p class="footer-text">Made with ♥ for learning</p>
+</div>
+
+</body>
+</html>
